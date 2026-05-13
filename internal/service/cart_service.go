@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"joi-delivery-golang/internal/dto/request"
 	"joi-delivery-golang/internal/dto/response"
 	"joi-delivery-golang/internal/models"
@@ -35,7 +34,7 @@ func (cs *CartService) AddToCart(req request.AddToCartRequest) (*response.AddToC
 	}
 
 	cart.CalculateTotal()
-	fmt.Println(cart.ApplyDiscount())
+	cart.ApplyDiscount()
 
 	return &response.AddToCartResponse{
 		Cart: *cart,
