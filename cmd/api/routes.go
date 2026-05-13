@@ -1,8 +1,9 @@
 package api
 
 import (
-	"github.com/labstack/echo/v4"
 	"joi-delivery-golang/cmd/api/handler"
+
+	"github.com/labstack/echo/v4"
 )
 
 func BindRoutes(server *echo.Echo, hand handler.Handler) {
@@ -12,4 +13,7 @@ func BindRoutes(server *echo.Echo, hand handler.Handler) {
 
 	// Inventory routes
 	server.POST("/inventory/health", hand.InventoryHealth)
+
+	//Order route
+	server.POST("/order", hand.OrderPlace)
 }

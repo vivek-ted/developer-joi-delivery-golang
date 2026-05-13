@@ -3,11 +3,12 @@ package server
 import (
 	"context"
 
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"joi-delivery-golang/cmd/api"
 	"joi-delivery-golang/cmd/api/handler"
 	"joi-delivery-golang/internal/service"
+
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 type Server struct {
@@ -45,12 +46,15 @@ func registerHandlers() handler.Handler {
 	userService := service.NewUserService()
 	productService := service.NewProductService()
 	cartService := service.NewCartService(userService, productService)
+	orderService := service.NewOrderService()
 
 	cartHandler := handler.NewCartHandler(cartService)
 	inventHandler := handler.NewInventoryHandler()
+	orderPlaceHandler := handler.NewOrderHandler(orderService, cartService)
 
 	return handler.Handler{
 		CartHandler:      cartHandler,
 		InventoryHandler: inventHandler,
+		OrderHandler:     orderPlaceHandler,
 	}
 }

@@ -41,9 +41,17 @@ func InitializeTestData() {
 	}
 
 	products = map[string]*models.GroceryProduct{
-		"product101": newProduct("product101", "Wheat Bread", "store101"),
-		"product102": newProduct("product102", "Spinach", "store102"),
-		"product103": newProduct("product103", "Crackers", "store101"),
+		"product101": newProduct("product101", "Wheat Bread", "store101", "grocery"),
+		"product102": newProduct("product102", "Spinach", "store102", "grocery"),
+		"product103": newProduct("product103", "Crackers", "store101", "grocery"),
+
+		"product201": newProduct("product201", "Crackers", "store101", "medicine"),
+		"product202": newProduct("product202", "Crackers", "store101", "medicine"),
+		"product203": newProduct("product203", "Crackers", "store101", "medicine"),
+
+		"product301": newProduct("product301", "Crackers", "store101", "electronic"),
+		"product302": newProduct("product302", "Crackers", "store101", "electronic"),
+		"product303": newProduct("product303", "Crackers", "store101", "electronic"),
 	}
 
 	usersCart = map[string]*models.Cart{
@@ -60,7 +68,7 @@ func newCart(cartId, userId string) *models.Cart {
 	}
 }
 
-func newProduct(productId, name, storeId string) *models.GroceryProduct {
+func newProduct(productId, name, storeId, cat string) *models.GroceryProduct {
 	return &models.GroceryProduct{
 		Product: models.Product{
 			ID:   productId,
@@ -71,8 +79,8 @@ func newProduct(productId, name, storeId string) *models.GroceryProduct {
 		AvailableStock: 30,
 		Weight:         500.00,
 		Store:          *stores[storeId],
+		Category:       cat,
 	}
-
 }
 
 func ClearTestData() {

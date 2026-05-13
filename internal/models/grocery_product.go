@@ -9,4 +9,6 @@ type GroceryProduct struct {
 	Weight         float64 `json:"weight"`
 	Discount       float64 `json:"discount"`
 	Store          Store   `json:"store"`
+	Qty            int     `json:"qty"`
+	Category       string  `json:"category"`
 }

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"joi-delivery-golang/internal/dto/request"
 	"joi-delivery-golang/internal/dto/response"
 	"joi-delivery-golang/internal/models"
@@ -20,10 +21,21 @@ func NewCartService(userSvc *UserService, productSvc *ProductService) *CartServi
 
 func (cs *CartService) AddToCart(req request.AddToCartRequest) (*response.AddToCartResponse, error) {
 	product := cs.getProductByID(req.ProductID, req.OutletID)
+	product.Qty = req.Qty
 
 	cart := cs.findCartByUser(req.UserID)
 
-	cart.Products = append(cart.Products, *product)
+	index, cartProduct := cart.FindProductByID(req.ProductID)
+	if cartProduct == nil {
+		cart.Products = append(cart.Products, *product)
+	} else {
+		totalQ := product.Qty + cartProduct.Qty
+		cartProduct.Qty = totalQ
+		cart.Products[index] = *cartProduct
+	}
+
+	cart.CalculateTotal()
+	fmt.Println(cart.ApplyDiscount())
 
 	return &response.AddToCartResponse{
 		Cart: *cart,
