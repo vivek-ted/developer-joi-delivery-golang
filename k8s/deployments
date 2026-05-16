@@ -1,0 +1,48 @@
+# k8s/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: joi-delivery
+  namespace: dev
+  labels:
+    app: joi-delivery
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: joi-delivery
+  template:
+    metadata:
+      labels:
+        app: joi-delivery
+    spec:
+      containers:
+        - name: joi-delivery
+          image: your-dockerhub-username/joi-delivery:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: APP_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: joi-delivery-config
+                  key: APP_ENV
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"

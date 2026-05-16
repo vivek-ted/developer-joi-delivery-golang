@@ -1,0 +1,14 @@
+# k8s/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: joi-delivery
+  namespace: dev
+spec:
+  type: NodePort
+  selector:
+    app: joi-delivery
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30080
