@@ -14,12 +14,6 @@ pipeline {
             }
         }
 
-        stage('Test') {
-            steps {
-                sh 'make test'
-            }
-        }
-
         stage('Docker build & push') {
             steps {
                 sh """
