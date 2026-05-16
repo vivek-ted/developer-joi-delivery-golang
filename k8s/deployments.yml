@@ -1,0 +1,26 @@
+# k8s/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: joi-delivery
+  namespace: dev
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: joi-delivery
+  template:
+    metadata:
+      labels:
+        app: joi-delivery
+    spec:
+      containers:
+        - name: joi-delivery
+          image: localhost:5000/joi-delivery:latest
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5

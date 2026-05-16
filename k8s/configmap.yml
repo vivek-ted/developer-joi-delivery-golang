@@ -1,0 +1,9 @@
+# k8s/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: joi-delivery-config
+  namespace: dev
+data:
+  APP_ENV: "development"
+  LOG_LEVEL: "debug"
