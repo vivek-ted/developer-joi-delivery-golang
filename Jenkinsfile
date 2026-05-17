@@ -6,8 +6,8 @@ pipeline {
         REGISTRY    = 'localhost:5000'
         IMAGE_TAG   = "${REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER}"
         LATEST_TAG  = "${REGISTRY}/${IMAGE_NAME}:latest"
-        APP_PORT    = '8001'
-        HOST_PORT   = '9090'           // access app at http://localhost:9090
+        APP_PORT    = '8080'
+        HOST_PORT   = '8001'           // access app at http://localhost:8001
     }
 
     stages {

@@ -19,12 +19,12 @@ func main() {
 	newServer := server.NewServer(ctx)
 
 	go func() {
-		if err := newServer.Start(":8080"); err != nil && err != http.ErrServerClosed {
+		if err := newServer.Start(":8001"); err != nil && err != http.ErrServerClosed {
 			log.Fatal("Failed to start server ", err)
 		}
 	}()
 
-	log.Println("server started on :8080")
+	log.Println("server started on :8001")
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
