@@ -7,7 +7,7 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o main ./cmd/app/main.go
+RUN go build -o server ./cmd/app/main.go
 
 # server
 FROM alpine:latest
@@ -17,11 +17,11 @@ USER appuser
 
 WORKDIR /root/
 
-COPY --from=builder /app/main .
+COPY --from=builder /app/server .
 
-EXPOSE 8080
+EXPOSE 8001
 
-CMD ["./main"]
+CMD ["./server"]
 
 # docker build -t jod .
 # docker run jod:latest

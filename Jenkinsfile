@@ -2,19 +2,20 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = 'joi-delivery'
-        REGISTRY   = 'localhost:5000'
-        IMAGE_TAG  = "${REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER}"
-        LATEST_TAG = "${REGISTRY}/${IMAGE_NAME}:latest"
-        NAMESPACE  = 'dev'
+        IMAGE_NAME  = 'joi-delivery'
+        REGISTRY    = 'localhost:5000'
+        IMAGE_TAG   = "${REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER}"
+        LATEST_TAG  = "${REGISTRY}/${IMAGE_NAME}:latest"
+        APP_PORT    = '8001'
+        HOST_PORT   = '9090'           // access app at http://localhost:9090
     }
 
     stages {
 
         stage('Checkout') {
             steps {
-                echo "Branch: ${env.BRANCH_NAME ?: 'unknown'}"
                 checkout scm
+                echo "✅ Checked out: ${env.GIT_COMMIT?.take(7) ?: 'unknown'}"
             }
         }
 
@@ -22,99 +23,82 @@ pipeline {
             steps {
                 sh '''
                     export PATH=$PATH:/usr/local/go/bin
+                    export GOPATH=/home/jenkins/go
+                    export GOCACHE=/home/jenkins/.cache/go-build
                     go version
                     go mod tidy
-                    go test ./... -v -coverprofile=coverage.out
-                    go tool cover -func=coverage.out
-                '''
-            }
-            post {
-                always {
-                    archiveArtifacts artifacts: 'coverage.out', allowEmptyArchive: true
-                }
-            }
-        }
-
-        stage('Docker build') {
-            steps {
-                sh '''
-                    docker build \
-                        -t ${IMAGE_TAG} \
-                        -t ${LATEST_TAG} \
-                        .
+                    go test ./... -v
                 '''
             }
         }
 
-        stage('Push to local registry') {
+        stage('Build image') {
             steps {
-                sh '''
+                sh """
+                    docker build -t ${IMAGE_TAG} -t ${LATEST_TAG} .
+                    echo "✅ Image built: ${IMAGE_TAG}"
+                """
+            }
+        }
+
+        stage('Push to registry') {
+            steps {
+                sh """
                     docker push ${IMAGE_TAG}
                     docker push ${LATEST_TAG}
-                    echo "✅ Pushed ${IMAGE_TAG}"
-                    echo "✅ Pushed ${LATEST_TAG}"
-                '''
+                    echo "✅ Pushed to local registry"
+                """
             }
         }
 
-        stage('Deploy to Kubernetes') {
+        stage('Deploy') {
             steps {
-                withKubeConfig([credentialsId: 'kubeconfig-local']) {
-                    sh '''
-                        # ensure namespace exists
-                        kubectl get namespace ${NAMESPACE} 2>/dev/null || \
-                            kubectl create namespace ${NAMESPACE}
+                sh """
+                    # Stop and remove existing container if running
+                    docker stop ${IMAGE_NAME} 2>/dev/null || true
+                    docker rm   ${IMAGE_NAME} 2>/dev/null || true
 
-                        # apply all manifests
-                        kubectl apply -f k8s/ -n ${NAMESPACE}
+                    # Pull latest image and run
+                    docker pull ${LATEST_TAG}
+                    docker run -d \
+                        --name ${IMAGE_NAME} \
+                        --restart unless-stopped \
+                        -p ${HOST_PORT}:${APP_PORT} \
+                        ${LATEST_TAG}
 
-                        # roll out the new image
-                        kubectl set image deployment/${IMAGE_NAME} \
-                            ${IMAGE_NAME}=${IMAGE_TAG} \
-                            -n ${NAMESPACE}
-
-                        # wait up to 2 minutes for rollout
-                        kubectl rollout status deployment/${IMAGE_NAME} \
-                            -n ${NAMESPACE} --timeout=120s
-                    '''
-                }
+                    echo "✅ Container started"
+                    docker ps | grep ${IMAGE_NAME}
+                """
             }
         }
 
-        stage('Verify') {
+        stage('Health check') {
             steps {
-                withKubeConfig([credentialsId: 'kubeconfig-local']) {
-                    sh '''
-                        echo "──── Pods ────"
-                        kubectl get pods -n ${NAMESPACE} -l app=${IMAGE_NAME}
+                sh """
+                    # Wait for app to start
+                    sleep 3
 
-                        echo "──── Service ────"
-                        kubectl get svc -n ${NAMESPACE}
+                    # Check container is running
+                    docker inspect -f '{{.State.Running}}' ${IMAGE_NAME}
 
-                        echo "──── Image in use ────"
-                        kubectl get deployment ${IMAGE_NAME} -n ${NAMESPACE} \
-                            -o jsonpath="{.spec.template.spec.containers[0].image}"
-                        echo ""
-                    '''
-                }
+                    echo "✅ App running at http://localhost:${HOST_PORT}"
+                    echo "✅ Health: http://localhost:${HOST_PORT}/health"
+                """
             }
         }
     }
 
     post {
         success {
-            echo "✅ Build #${BUILD_NUMBER} deployed to namespace '${NAMESPACE}'"
+            echo "✅ Build #${BUILD_NUMBER} deployed — http://localhost:${HOST_PORT}"
         }
         failure {
-            echo "❌ Build #${BUILD_NUMBER} failed — rolling back"
-            withKubeConfig([credentialsId: 'kubeconfig-local']) {
-                sh 'kubectl rollout undo deployment/${IMAGE_NAME} -n ${NAMESPACE} || true'
-            }
+            echo "❌ Build #${BUILD_NUMBER} failed — check console output above"
+            sh "docker stop ${IMAGE_NAME} 2>/dev/null || true"
         }
         always {
-            // clean up local image to save disk space
-            sh 'docker rmi ${IMAGE_TAG} ${LATEST_TAG} || true'
-            cleanWs()
+            sh "docker rmi ${IMAGE_TAG} 2>/dev/null || true"
+            deleteDir()
         }
     }
 }
